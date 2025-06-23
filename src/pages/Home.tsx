@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Calendar, Plus, BarChart3 } from 'lucide-react';
 import Card from '../components/Card';
@@ -35,6 +35,39 @@ const Home: React.FC = () => {
       color: 'bg-purple-500'
     }
   ];
+
+  const [stats, setStats] = useState({
+    totalCourses: 0,
+    activeInstances: 0,
+    totalPrerequisites: 0,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [coursesRes, instancesRes] = await Promise.all([
+          fetch('http://localhost:8080/api/courses'),
+          fetch('http://localhost:8080/api/instances'),
+        ]);
+
+        const courses = await coursesRes.json();
+        const instances = await instancesRes.json();
+
+        const totalCourses = courses.length;
+        const activeInstances = instances.length;
+        const totalPrerequisites = courses.reduce(
+          (acc: number, course: any) => acc + course.prerequisites.length,
+          0
+        );
+
+        setStats({ totalCourses, activeInstances, totalPrerequisites });
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -86,19 +119,25 @@ const Home: React.FC = () => {
         })}
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - now dynamic */}
       <Card title="System Overview">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
           <div className="text-center p-4 bg-contrast border-2 border-black">
-            <div className="text-2xl sm:text-3xl font-black text-accent mb-2">4</div>
+            <div className="text-2xl sm:text-3xl font-black text-accent mb-2">
+              {stats.totalCourses}
+            </div>
             <div className="text-xs sm:text-sm font-bold text-primary">Total Courses</div>
           </div>
           <div className="text-center p-4 bg-contrast border-2 border-black">
-            <div className="text-2xl sm:text-3xl font-black text-success mb-2">4</div>
+            <div className="text-2xl sm:text-3xl font-black text-success mb-2">
+              {stats.activeInstances}
+            </div>
             <div className="text-xs sm:text-sm font-bold text-primary">Active Instances</div>
           </div>
           <div className="text-center p-4 bg-contrast border-2 border-black">
-            <div className="text-2xl sm:text-3xl font-black text-orange-500 mb-2">3</div>
+            <div className="text-2xl sm:text-3xl font-black text-orange-500 mb-2">
+              {stats.totalPrerequisites}
+            </div>
             <div className="text-xs sm:text-sm font-bold text-primary">Prerequisites</div>
           </div>
         </div>
